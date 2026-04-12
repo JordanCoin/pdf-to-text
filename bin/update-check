@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PLUGIN_DIR="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+STATE_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.config/pdf-to-text}"
+CACHE_FILE="$STATE_DIR/last-update-check"
+MARKER_FILE="$STATE_DIR/just-upgraded-from"
+SNOOZE_FILE="$STATE_DIR/update-snoozed"
+VERSION_FILE="$PLUGIN_DIR/VERSION"
+REMOTE_URL="https://api.github.com/repos/JordanCoin/glyph-api/releases/latest"
+
+mkdir -p "$STATE_DIR"
+
+LOCAL="$(cat "$VERSION_FILE" 2>/dev/null | tr -d '[:space:]')"
+[ -z "$LOCAL" ] && exit 0
+
+# Check just-upgraded marker first
+if [ -f "$MARKER_FILE" ]; then
+  OLD="$(cat "$MARKER_FILE" 2>/dev/null | tr -d '[:space:]')"
+  rm -f "$MARKER_FILE"
+  [ -n "$OLD" ] && echo "JUST_UPGRADED $OLD $LOCAL"
+  exit 0
+fi
+
+# Check cache — avoid hammering GitHub API
+if [ -f "$CACHE_FILE" ]; then
+  CACHE_AGE=$(( $(date +%s) - $(stat -f %m "$CACHE_FILE" 2>/dev/null || stat -c %Y "$CACHE_FILE" 2>/dev/null || echo 0) ))
+  CACHE_STATUS="$(head -1 "$CACHE_FILE" 2>/dev/null || true)"
+
+  if echo "$CACHE_STATUS" | grep -q "^UP_TO_DATE" && [ "$CACHE_AGE" -lt 3600 ]; then
+    exit 0
+  fi
+  if echo "$CACHE_STATUS" | grep -q "^UPGRADE_AVAILABLE" && [ "$CACHE_AGE" -lt 43200 ]; then
+    # Check snooze before re-emitting
+    if [ -f "$SNOOZE_FILE" ]; then
+      SNOOZED_VER=$(awk '{print $1}' "$SNOOZE_FILE")
+      SNOOZE_LEVEL=$(awk '{print $2}' "$SNOOZE_FILE")
+      SNOOZE_EPOCH=$(awk '{print $3}' "$SNOOZE_FILE")
+      NOW=$(date +%s)
+
+      case "$SNOOZE_LEVEL" in
+        1) DURATION=86400 ;;   # 24h
+        2) DURATION=172800 ;;  # 48h
+        *) DURATION=604800 ;;  # 7 days
+      esac
+
+      REMOTE_FROM_CACHE=$(echo "$CACHE_STATUS" | awk '{print $3}')
+      if [ "$SNOOZED_VER" = "$REMOTE_FROM_CACHE" ] && [ "$NOW" -lt "$((SNOOZE_EPOCH + DURATION))" ]; then
+        exit 0
+      fi
+    fi
+
+    echo "$CACHE_STATUS"
+    exit 0
+  fi
+fi
+
+# Fetch latest release from GitHub
+REMOTE=$(curl -sf --max-time 5 "$REMOTE_URL" 2>/dev/null | grep '"tag_name"' | head -1 | sed 's/.*"tag_name"[[:space:]]*:[[:space:]]*"v\{0,1\}\([^"]*\)".*/\1/' || true)
+
+if [ -z "$REMOTE" ]; then
+  # Network error — silent, don't block the session
+  exit 0
+fi
+
+if [ "$LOCAL" = "$REMOTE" ]; then
+  echo "UP_TO_DATE $LOCAL $REMOTE" > "$CACHE_FILE"
+  exit 0
+fi
+
+echo "UPGRADE_AVAILABLE $LOCAL $REMOTE" > "$CACHE_FILE"
+echo "UPGRADE_AVAILABLE $LOCAL $REMOTE"

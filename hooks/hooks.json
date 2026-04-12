@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT:-$(dirname \"$0\")/..}/hooks/install-engine.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
