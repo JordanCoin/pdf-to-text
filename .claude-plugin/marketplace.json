@@ -1,0 +1,19 @@
+{
+  "name": "pdf-to-text",
+  "owner": {
+    "name": "Jordan Coin Jackson"
+  },
+  "plugins": [
+    {
+      "name": "pdf-to-text",
+      "source": "./",
+      "description": "Extract clean text from any PDF — even the ones Chrome mangles. Claude Code companion for the PDF to Text Chrome extension.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Jordan Coin Jackson"
+      },
+      "homepage": "https://jordancoin.github.io/pdf-to-text/",
+      "keywords": ["pdf", "extraction", "markdown", "text", "wasm"]
+    }
+  ]
+}
