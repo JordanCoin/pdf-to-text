@@ -229,52 +229,15 @@
   </div>
 </section>
 
-<section id="privacy" class="privacy">
+<section id="privacy">
   <div class="container">
-    <h2>Privacy Policy</h2>
-    <p><strong>Effective date:</strong> 2026-04-11</p>
-
-    <h3>The one-sentence version</h3>
+    <h2>Privacy</h2>
     <p>
-      PDF to Text never sends your PDFs, your browsing, or anything else off your
-      device. Everything happens locally in your browser using a WebAssembly module
-      compiled from open-source Rust. There is no backend server. There is no
-      telemetry. There are no analytics.
+      Your PDFs never leave your device. PDF to Text runs entirely in your browser
+      using a local engine. We collect only anonymous performance stats (extraction
+      time, page count) to improve the tool. No PDF content, no URLs, no identity.
     </p>
-
-    <h3>What we collect</h3>
-    <p><strong>Nothing.</strong> No PII, no browsing history, no PDF content, no
-    clicks, no timing data, no error reports, no crash dumps, no device fingerprints.</p>
-
-    <h3>What we store locally</h3>
-    <ul>
-      <li>A per-tab badge on the extension icon (in-memory, cleared on tab close)</li>
-      <li>Recent extraction history in <code>chrome.storage.local</code> (up to 20
-        entries, capped at 5 MB, clearable via the popup's "Clear history" button)</li>
-      <li>A "default viewer" preference toggle (boolean, stored locally)</li>
-    </ul>
-    <p>None of this is synced to Google or transmitted anywhere.</p>
-
-    <h3>Permissions</h3>
-    <ul>
-      <li><code>host_permissions: &lt;all_urls&gt;</code> — to fetch the PDF when you click "Open in PDF to Text"</li>
-      <li><code>declarativeNetRequest</code> — optional auto-redirect when you enable "Always open PDFs"</li>
-      <li><code>tabs</code> — to detect when you're on a .pdf URL and show the extraction offer</li>
-      <li><code>storage</code> — for the recent history list and default-viewer preference</li>
-      <li><code>offscreen</code> — to host the persistent WASM runtime</li>
-    </ul>
-
-    <h3>Network traffic</h3>
-    <p>The only network request is <code>fetch()</code> for the original PDF URL — the
-    same request your browser would make if you downloaded it directly. No other
-    connections. No update pings. No telemetry endpoints.</p>
-
-    <h3>Open source</h3>
-    <p>The extraction engine (<code>glyph-api</code>) is open source. You can audit
-    the code, rebuild from source, and verify the compiled WASM.</p>
-
-    <h3>Contact</h3>
-    <p>Questions: <a href="mailto:jordan@jwcholding.com">jordan@jwcholding.com</a></p>
+    <p><a href="privacy.html">Read the full privacy policy &rarr;</a></p>
   </div>
 </section>
 
