@@ -132,7 +132,7 @@
     <span class="logo">PDF to Text</span>
     <span class="spacer"></span>
     <a href="#how">How it works</a>
-    <a href="#claude">Claude</a>
+    <a href="#claude">AI agents</a>
     <a href="#privacy">Privacy</a>
   </div>
 </nav>
@@ -201,17 +201,16 @@
 
 <section id="claude">
   <div class="container">
-    <h2>Use with Claude Code</h2>
+    <h2>Use with your AI agent</h2>
     <p>
-      If you use <a href="https://claude.ai/code">Claude Code</a>, you can add
-      PDF to Text as a skill so Claude can invoke it automatically when you ask
-      about PDFs.
+      One command installs the engine and a skill for Claude Code, Codex,
+      Cursor, Gemini CLI, or Copilot. Your agent then calls it whenever you
+      ask about a PDF. Everything runs locally.
     </p>
-    <pre><code>/plugin marketplace add JordanCoin/glyph-api
-/plugin install glyph-api@glyph-api</code></pre>
+    <pre><code>curl -fsSL https://jordancoin.github.io/pdf-to-text/install.sh | bash</code></pre>
     <p style="margin-top: 12px; font-size: 13px; color: var(--muted);">
-      Requires collaborator access to the private repo. The extension itself
-      works for everyone via the Chrome Web Store.
+      Pick a specific agent or scope on the <a href="/pdf-to-text/install.html">install page</a>.
+      Claude Code users can also <code>/plugin install pdf-to-text@JordanCoin/pdf-to-text</code> for MCP tools.
     </p>
   </div>
 </section>

@@ -65,7 +65,7 @@ export async function execute(args: ExtractArgs): Promise<{ content: Array<{ typ
   }
 
   const result = await extractChars(pdfBytes);
-  const formats = await toAllFormats(result, source);
+  const formats = await toAllFormats(result, source, pdfBytes);
 
   const stats = {
     pages: result.pages.length,

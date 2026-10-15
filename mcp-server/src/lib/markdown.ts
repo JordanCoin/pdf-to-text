@@ -1,52 +1,31 @@
-import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import { existsSync } from "node:fs";
-import { homedir } from "node:os";
+// Three output shapes from one extraction. `structured` is the engine's own
+// --markdown rendering (frontmatter + font-detected headings); `plain` and
+// `basic` are derived from the per-page JSON text.
 import type { CharsExtractionResult } from "./wasm-extract.js";
+import { runEngine } from "./wasm-extract.js";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-function findMarkdownModule(): string {
-  const pluginData = process.env["CLAUDE_PLUGIN_DATA"];
-  const configDir = resolve(homedir(), ".config", "pdf-to-text");
-
-  const candidates = [
-    ...(pluginData ? [resolve(pluginData, "markdown.js")] : []),
-    resolve(configDir, "markdown.js"),
-  ];
-
-  for (const p of candidates) {
-    if (existsSync(p)) return p;
-  }
-
-  throw new Error(
-    "markdown.js not found. Searched:\n" + candidates.map((p) => `  - ${p}`).join("\n"),
-  );
+function escapeMd(s: string): string {
+  return s.replace(/^(#{1,6})(\s)/gm, "\\$1$2");
 }
 
-interface MarkdownModule {
-  toPlain(result: CharsExtractionResult, source?: string): string;
-  toBasicMarkdown(result: CharsExtractionResult, source?: string): string;
-  toStructuredMarkdown(result: CharsExtractionResult, source?: string): string;
+export function toPlain(result: CharsExtractionResult): string {
+  return result.pages.map((p) => p.text).join("\n\n");
 }
 
-let mod: MarkdownModule | null = null;
-
-async function getModule(): Promise<MarkdownModule> {
-  if (mod) return mod;
-  const path = findMarkdownModule();
-  mod = await import(path) as unknown as MarkdownModule;
-  return mod;
+export function toBasicMarkdown(result: CharsExtractionResult, source?: string): string {
+  const head = source ? `<!-- source: ${source} -->\n\n` : "";
+  return head + result.pages.map((p) => `# Page ${p.page}\n\n${escapeMd(p.text)}`).join("\n\n---\n\n");
 }
 
 export async function toAllFormats(
   result: CharsExtractionResult,
   source?: string,
+  pdfBytes?: Uint8Array,
 ): Promise<{ plain: string; basic: string; structured: string }> {
-  const m = await getModule();
-  return {
-    plain: m.toPlain(result, source),
-    basic: m.toBasicMarkdown(result, source),
-    structured: m.toStructuredMarkdown(result, source),
-  };
+  const plain = toPlain(result);
+  const basic = toBasicMarkdown(result, source);
+  // Structured needs a second engine pass over the bytes; fall back to basic
+  // when the caller did not keep them.
+  const structured = pdfBytes ? await runEngine(pdfBytes, "--markdown") : basic;
+  return { plain, basic, structured };
 }

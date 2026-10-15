@@ -2,12 +2,13 @@
 set -euo pipefail
 
 PLUGIN_DIR="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
-STATE_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.config/pdf-to-text}"
+STATE_DIR="${PDF_TO_TEXT_HOME:-$HOME/.pdf-to-text}"
 CACHE_FILE="$STATE_DIR/last-update-check"
 MARKER_FILE="$STATE_DIR/just-upgraded-from"
 SNOOZE_FILE="$STATE_DIR/update-snoozed"
 VERSION_FILE="$PLUGIN_DIR/VERSION"
-REMOTE_URL="https://api.github.com/repos/JordanCoin/glyph-api/releases/latest"
+# pdf-to-text is public; glyph-api is private and 404s without a token.
+REMOTE_URL="https://api.github.com/repos/JordanCoin/pdf-to-text/releases/latest"
 
 mkdir -p "$STATE_DIR"
 

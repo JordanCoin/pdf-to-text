@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PDF to Text — Use with your AI agent</title>
+  <style>
+    :root { --bg: #0a0e17; --surface: #111827; --border: #1e293b; --text: #e2e8f0; --muted: #94a3b8; --accent: #4a9eff; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 15px; line-height: 1.7; color: var(--text); background: var(--bg); }
+    a { color: var(--accent); text-decoration: none; }
+    .container { max-width: 640px; margin: 0 auto; padding: 60px 24px 80px; }
+    h1 { font-size: 28px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+    p { color: var(--muted); margin-bottom: 20px; }
+    .agents { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+    .agents button { font: inherit; font-size: 14px; font-weight: 600; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; }
+    .agents button[aria-pressed="true"] { border-color: var(--accent); background: #15305a; }
+    .scope { display: flex; gap: 16px; font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+    .scope label { cursor: pointer; }
+    pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; font: 13px/1.6 ui-monospace, "SF Mono", Menlo, monospace; color: #cfe0ff; overflow-x: auto; white-space: pre-wrap; word-break: break-all; margin-bottom: 10px; }
+    .row { display: flex; gap: 8px; align-items: center; margin-bottom: 28px; }
+    .row button { font: inherit; font-weight: 700; padding: 8px 18px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; cursor: pointer; }
+    h2 { font-size: 16px; color: #fff; margin: 28px 0 8px; }
+    ul { margin: 0 0 16px 20px; color: var(--muted); }
+    li { margin-bottom: 6px; }
+    code { font-family: ui-monospace, Menlo, monospace; font-size: 0.92em; color: #cfe0ff; }
+    .fine { font-size: 12px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Use with your AI agent</h1>
+  <p>One command installs the extraction engine and drops a skill where your agent looks for it. Everything runs locally.</p>
+
+  <div class="agents" role="group" aria-label="Agent">
+    <button data-agent="claude" aria-pressed="true">Claude Code</button>
+    <button data-agent="codex">Codex</button>
+    <button data-agent="cursor">Cursor</button>
+    <button data-agent="gemini">Gemini CLI</button>
+    <button data-agent="copilot">Copilot</button>
+    <button data-agent="all">All of them</button>
+  </div>
+
+  <div class="scope">
+    <label><input type="radio" name="scope" value="global" checked> Every project (installs under <code>~</code>)</label>
+    <label><input type="radio" name="scope" value="project"> This repo only (run inside it)</label>
+  </div>
+
+  <pre id="cmd"></pre>
+  <div class="row"><button id="copy">Copy command</button><span id="where" class="fine"></span></div>
+
+  <h2>What it installs</h2>
+  <ul>
+    <li><code>~/.pdf-to-text/bin/pdf-to-text</code>: the native engine (3 MB) plus an open-source font pack (24 MB) for glyph fingerprint matching. Checksum verified.</li>
+    <li>A <code>SKILL.md</code> in each selected agent's skill folder, so the agent knows when and how to call it.</li>
+  </ul>
+
+  <h2>Claude Code plugin (optional)</h2>
+  <p>Prefer MCP tools over a shell command? Inside Claude Code:</p>
+  <pre>/plugin install pdf-to-text@JordanCoin/pdf-to-text</pre>
+
+  <p class="fine">Windows: run the command from Git Bash or WSL. <a href="/pdf-to-text/">Back to PDF to Text</a> · <a href="https://github.com/JordanCoin/pdf-to-text">Source</a></p>
+</div>
+<script>
+  const PATHS = {
+    claude: { global: "~/.claude/skills/pdf-to-text", project: ".claude/skills/pdf-to-text" },
+    codex: { global: "~/.agents/skills/pdf-to-text", project: ".agents/skills/pdf-to-text" },
+    cursor: { global: "~/.agents/skills + ~/.cursor/skills", project: ".agents/skills + .cursor/skills" },
+    gemini: { global: "~/.agents/skills + ~/.gemini/skills", project: ".agents/skills + .gemini/skills" },
+    copilot: { global: "~/.agents/skills + ~/.copilot/skills", project: ".agents/skills + .github/skills" },
+    all: { global: "every folder above", project: "every folder above" },
+  };
+  const q = new URLSearchParams(location.search);
+  let agent = PATHS[q.get("agent")] ? q.get("agent") : "claude";
+  const btns = [...document.querySelectorAll(".agents button")];
+  const cmd = document.getElementById("cmd"), where = document.getElementById("where");
+  function render() {
+    const scope = document.querySelector('input[name=scope]:checked').value;
+    btns.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.agent === agent)));
+    cmd.textContent = `curl -fsSL https://jordancoin.github.io/pdf-to-text/install.sh | bash -s -- --agent ${agent} --${scope}`;
+    where.textContent = "Skill goes to " + PATHS[agent][scope];
+  }
+  btns.forEach((b) => b.addEventListener("click", () => { agent = b.dataset.agent; render(); }));
+  document.querySelectorAll('input[name=scope]').forEach((r) => r.addEventListener("change", render));
+  document.getElementById("copy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(cmd.textContent); } catch {}
+    const b = document.getElementById("copy"); b.textContent = "Copied ✓"; setTimeout(() => (b.textContent = "Copy command"), 1500);
+  });
+  render();
+</script>
+</body>
+</html>

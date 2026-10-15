@@ -1,63 +1,28 @@
 #!/usr/bin/env bash
+# Claude Code plugin SessionStart hook: make sure the native engine is
+# installed. Delegates to the same universal installer every other agent
+# uses, so there is exactly one install path to maintain.
 set -euo pipefail
 
 PLUGIN_DIR="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
-INSTALL_DIR="${CLAUDE_PLUGIN_DATA:-${HOME}/.config/pdf-to-text}"
-VERSION_FILE="${PLUGIN_DIR}/VERSION"
-INSTALLED_VERSION_FILE="${INSTALL_DIR}/.version"
-MARKER_FILE="${INSTALL_DIR}/just-upgraded-from"
+ENGINE_DIR="${PDF_TO_TEXT_HOME:-$HOME/.pdf-to-text}"
+WANT="$(tr -d '[:space:]' < "$PLUGIN_DIR/VERSION" 2>/dev/null || echo latest)"
+HAVE="$(cat "$ENGINE_DIR/VERSION" 2>/dev/null || true)"
 
-RELEASE_BASE="https://github.com/JordanCoin/glyph-api/releases/download"
-
-TARGET_VERSION="$(cat "$VERSION_FILE" 2>/dev/null | tr -d '[:space:]')"
-INSTALLED_VERSION="$(cat "$INSTALLED_VERSION_FILE" 2>/dev/null | tr -d '[:space:]' || true)"
-
-# Already at target version — nothing to do
-if [ "$INSTALLED_VERSION" = "$TARGET_VERSION" ]; then
+# Already installed at the plugin's pinned version: nothing to do.
+if [ -x "$ENGINE_DIR/bin/pdf-to-text" ] && [ "$HAVE" = "v$WANT" ]; then
   exit 0
 fi
 
-echo "[pdf-to-text] Installing engine v${TARGET_VERSION}..."
-mkdir -p "$INSTALL_DIR"
+echo "[pdf-to-text] Installing engine v${WANT}..."
+if [ -n "$HAVE" ]; then echo "$HAVE" > "$ENGINE_DIR/just-upgraded-from"; fi
+bash "$PLUGIN_DIR/install.sh" --engine-only --version "v$WANT"
 
-RELEASE_URL="${RELEASE_BASE}/v${TARGET_VERSION}"
-
-download() {
-  local url="$1" dest="$2" name="$3"
-  echo "  Downloading ${name}..."
-  if ! curl -sfL --max-time 60 "$url" -o "${dest}.tmp"; then
-    echo "  [ERROR] Failed to download ${name}" >&2
-    rm -f "${dest}.tmp"
-    return 1
-  fi
-  if [ ! -s "${dest}.tmp" ]; then
-    echo "  [ERROR] Empty download for ${name}" >&2
-    rm -f "${dest}.tmp"
-    return 1
-  fi
-  mv "${dest}.tmp" "$dest"
-}
-
-WASM_FILE="${INSTALL_DIR}/glyph_api_bg.wasm"
-JS_FILE="${INSTALL_DIR}/glyph_api.js"
-MD_FILE="${INSTALL_DIR}/markdown.js"
-
-# Download all three files — atomic (all succeed or none committed)
-if download "${RELEASE_URL}/glyph_api_bg.wasm" "$WASM_FILE" "glyph_api_bg.wasm" \
-  && download "${RELEASE_URL}/glyph_api.js" "$JS_FILE" "glyph_api.js" \
-  && download "${RELEASE_URL}/markdown.js" "$MD_FILE" "markdown.js"; then
-
-  # Write upgrade marker if this was an upgrade (not first install)
-  if [ -n "$INSTALLED_VERSION" ] && [ "$INSTALLED_VERSION" != "$TARGET_VERSION" ]; then
-    echo "$INSTALLED_VERSION" > "$MARKER_FILE"
-  fi
-
-  echo "$TARGET_VERSION" > "$INSTALLED_VERSION_FILE"
-  echo "[pdf-to-text] Engine v${TARGET_VERSION} ready at ${INSTALL_DIR}"
-else
-  # Cleanup partial downloads — don't leave corrupted state
-  rm -f "${WASM_FILE}.tmp" "${JS_FILE}.tmp" "${MD_FILE}.tmp"
-  echo "[pdf-to-text] Install failed. extract_pdf unavailable until engine is installed." >&2
-  echo "[pdf-to-text] Retry: delete ${INSTALL_DIR} and restart your session." >&2
-  exit 1
+# The MCP server ships as TypeScript; dist/ is not committed. Build it once
+# so .mcp.json's `node mcp-server/dist/index.js` has something to run.
+MCP="$PLUGIN_DIR/mcp-server"
+if [ ! -f "$MCP/dist/index.js" ] && command -v npm >/dev/null 2>&1; then
+  echo "[pdf-to-text] Building MCP server..."
+  (cd "$MCP" && npm ci --no-audit --no-fund --silent && npx tsc -p .) \
+    || echo "[pdf-to-text] MCP build failed; the pdf-to-text skill still works via the CLI." >&2
 fi

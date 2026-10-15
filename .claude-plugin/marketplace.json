@@ -7,13 +7,19 @@
     {
       "name": "pdf-to-text",
       "source": "./",
-      "description": "Extract clean text from any PDF — even the ones Chrome mangles. Claude Code companion for the PDF to Text Chrome extension.",
-      "version": "0.1.0",
+      "description": "Extract clean text from any PDF, even the ones Chrome mangles. Local native engine, no network. Companion to the PDF to Text Chrome extension; works in Claude Code, Codex, Cursor, Gemini CLI, Copilot.",
+      "version": "0.7.0",
       "author": {
         "name": "Jordan Coin Jackson"
       },
       "homepage": "https://jordancoin.github.io/pdf-to-text/",
-      "keywords": ["pdf", "extraction", "markdown", "text", "wasm"]
+      "keywords": [
+        "pdf",
+        "extraction",
+        "markdown",
+        "text",
+        "wasm"
+      ]
     }
   ]
 }

@@ -1,12 +1,19 @@
 {
   "name": "pdf-to-text",
-  "version": "0.1.0",
-  "description": "Extract clean text from any PDF — even the ones Chrome mangles. 7-level cascade resolves broken Unicode mappings locally via WASM. Returns plain text, basic markdown, or structured markdown with TOC and headings.",
+  "version": "0.7.0",
+  "description": "Extract clean text from any PDF, even the ones Chrome mangles. 7-level cascade resolves broken Unicode mappings locally with a native engine. Returns plain text, basic markdown, or structured markdown with headings.",
   "author": {
     "name": "Jordan Coin Jackson"
   },
   "homepage": "https://jordancoin.github.io/pdf-to-text/",
-  "repository": "https://github.com/JordanCoin/glyph-api",
+  "repository": "https://github.com/JordanCoin/pdf-to-text",
   "license": "UNLICENSED",
-  "keywords": ["pdf", "extraction", "markdown", "text", "unicode", "wasm"]
+  "keywords": [
+    "pdf",
+    "extraction",
+    "markdown",
+    "text",
+    "unicode",
+    "wasm"
+  ]
 }
