@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PDF to Text — Sorry to see you go</title>
+  <style>
+    :root { --bg: #0a0e17; --surface: #111827; --border: #1e293b; --text: #e2e8f0; --muted: #94a3b8; --accent: #4a9eff; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 15px; line-height: 1.7; color: var(--text); background: var(--bg); }
+    a { color: var(--accent); text-decoration: none; }
+    .container { max-width: 520px; margin: 0 auto; padding: 60px 24px 80px; }
+    h1 { font-size: 26px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+    p { color: var(--muted); margin-bottom: 24px; }
+    label.opt { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; cursor: pointer; background: var(--surface); }
+    label.opt:hover { border-color: var(--accent); }
+    label.opt input { margin-top: 5px; }
+    textarea { width: 100%; min-height: 80px; margin: 12px 0 16px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; resize: vertical; }
+    button { padding: 10px 20px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: default; }
+    .done { display: none; }
+    .fine { font-size: 12px; margin-top: 24px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Sorry to see you go</h1>
+  <p>One click tells us what to fix. Nothing else is collected.</p>
+
+  <form id="f">
+    <label class="opt"><input type="radio" name="reason" value="wrong_text" required> <span>The text came out wrong or garbled</span></label>
+    <label class="opt"><input type="radio" name="reason" value="scanned_unsupported"> <span>My PDF was scanned or a photo and nothing came out</span></label>
+    <label class="opt"><input type="radio" name="reason" value="crash_slow"> <span>It crashed, froze, or was too slow</span></label>
+    <label class="opt"><input type="radio" name="reason" value="language"> <span>My PDF isn't in English and it didn't work</span></label>
+    <label class="opt"><input type="radio" name="reason" value="permissions"> <span>It asked for permissions I didn't want to give</span></label>
+    <label class="opt"><input type="radio" name="reason" value="not_needed"> <span>I just didn't need it anymore</span></label>
+    <label class="opt"><input type="radio" name="reason" value="other"> <span>Something else</span></label>
+    <textarea name="note" maxlength="500" placeholder="Anything else? (optional)"></textarea>
+    <button type="submit">Send</button>
+  </form>
+
+  <p class="done" id="done">Thanks. That goes straight to the person who builds this.</p>
+
+  <p class="fine">Sent: your answer, the extension version, and your OS. No account, no cookies, no PDF data. <a href="/pdf-to-text/privacy.html">Privacy policy</a></p>
+</div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const f = document.getElementById("f");
+  f.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    f.querySelector("button").disabled = true;
+    const d = new FormData(f);
+    try {
+      await fetch("https://pdf-to-text-telemetry.vercel.app/api/telemetry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: "uninstall",
+          reason: d.get("reason"),
+          note: d.get("note") || "",
+          version: q.get("v") || "unknown",
+          os: q.get("os") || "unknown",
+        }),
+        keepalive: true,
+      });
+    } catch {}
+    f.style.display = "none";
+    document.getElementById("done").style.display = "block";
+  });
+</script>
+</body>
+</html>
