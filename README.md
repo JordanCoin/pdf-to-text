@@ -4,13 +4,21 @@ The agent interface for [PDF to Text](https://jordancoin.github.io/pdf-to-text/)
 
 Chrome extension = humans. This plugin = agents. Same extraction engine.
 
-## Install
+## Install (any agent)
+
+```
+curl -fsSL https://jordancoin.github.io/pdf-to-text/install.sh | bash -s -- --agent claude   # or codex, cursor, gemini, copilot, all
+```
+
+Installs the native engine to `~/.pdf-to-text` and a `SKILL.md` where your agent looks for skills (`.claude/skills`, `.agents/skills`, and the agent's own folder). Add `--project` to install into the current repo instead of your home directory. Details and a per-agent picker: [install page](https://jordancoin.github.io/pdf-to-text/install.html).
+
+Claude Code can additionally install the full plugin, which adds MCP tools:
 
 ```
 /plugin install pdf-to-text@JordanCoin/pdf-to-text
 ```
 
-The engine downloads automatically on first use (~1.2 MB WASM). No build step, no dependencies beyond Node.
+The plugin's SessionStart hook installs the same native engine on first use. No build step.
 
 ## What you get
 

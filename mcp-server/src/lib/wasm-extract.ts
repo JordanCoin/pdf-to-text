@@ -1,62 +1,19 @@
-import { readFileSync, existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
-import { homedir } from "node:os";
+// Engine bridge. Historically this loaded a WASM build; the plugin now ships
+// the native `pdf-extract` binary (installed by install.sh / the
+// SessionStart hook) and shells out to it. Interfaces are unchanged so the
+// tools above do not care.
+import { execFile } from "node:child_process";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { promisify } from "node:util";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-function findWasmPaths(): { wasm: string; js: string } {
-  const pluginData = process.env["CLAUDE_PLUGIN_DATA"];
-  const configDir = resolve(homedir(), ".config", "pdf-to-text");
-
-  const candidates = [
-    ...(pluginData ? [pluginData] : []),
-    configDir,
-  ];
-
-  for (const dir of candidates) {
-    const wasmPath = resolve(dir, "glyph_api_bg.wasm");
-    const jsPath = resolve(dir, "glyph_api.js");
-    if (existsSync(wasmPath) && existsSync(jsPath)) {
-      return { wasm: wasmPath, js: jsPath };
-    }
-  }
-
-  throw new Error(
-    [
-      "WASM engine not found. Searched:",
-      ...candidates.map((d) => `  - ${d}`),
-      "",
-      "Install the engine by running the SessionStart hook,",
-      "or build from source: cd glyph-api && wasm-pack build --target web",
-    ].join("\n"),
-  );
-}
-
-let initialized = false;
-
-interface WasmModule {
-  initSync(opts: { module: WebAssembly.Module }): void;
-  extract_chars_with_positions(data: Uint8Array, profile?: string, maxWorkers?: number): string;
-  extract_text_from_pdf(data: Uint8Array, profile?: string, maxWorkers?: number): string;
-}
-
-let wasm: WasmModule;
-
-async function ensureInit(): Promise<void> {
-  if (initialized) return;
-  const paths = findWasmPaths();
-  wasm = await import(paths.js) as unknown as WasmModule;
-  const wasmBytes = readFileSync(paths.wasm);
-  wasm.initSync({ module: new WebAssembly.Module(wasmBytes) });
-  initialized = true;
-}
+const run = promisify(execFile);
 
 export interface CharEntry {
   c: string;
   x: number;
   y: number;
-  s: number;
   f: number;
   l: number;
 }
@@ -67,6 +24,7 @@ export interface CharsPage {
   chars: CharEntry[];
   fonts: string[];
   resolution: Record<string, number>;
+  verdict?: "text_layer" | "garbled" | "image_only";
 }
 
 export interface CharsExtractionResult {
@@ -77,15 +35,59 @@ export interface CharsExtractionResult {
   total_unresolved: number;
 }
 
+export function engineDir(): string {
+  return process.env["PDF_TO_TEXT_HOME"] ?? resolve(homedir(), ".pdf-to-text");
+}
+
+export function enginePath(): string {
+  const p = resolve(engineDir(), "bin", "pdf-to-text");
+  if (!existsSync(p)) {
+    throw new Error(
+      `pdf-to-text engine not found at ${p}.\n` +
+        "Install it: curl -fsSL https://jordancoin.github.io/pdf-to-text/install.sh | bash -s -- --engine-only",
+    );
+  }
+  return p;
+}
+
+/** Write bytes to a temp file, run the engine with `flag`, return stdout. */
+export async function runEngine(pdfBytes: Uint8Array, flag?: string): Promise<string> {
+  const dir = mkdtempSync(join(tmpdir(), "pdf-to-text-"));
+  const file = join(dir, "input.pdf");
+  try {
+    writeFileSync(file, pdfBytes);
+    const args = flag ? [file, flag] : [file];
+    const { stdout } = await run(enginePath(), args, { maxBuffer: 256 * 1024 * 1024 });
+    return stdout;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+interface EngineJson {
+  pages: Array<{ n: number; text: string; chars: number; unresolved: number; verdict: CharsPage["verdict"] }>;
+  summary: { pages: number; chars: number; unresolved: number };
+}
+
 export async function extractChars(pdfBytes: Uint8Array): Promise<CharsExtractionResult> {
-  await ensureInit();
-  const json = wasm.extract_chars_with_positions(pdfBytes);
-  return JSON.parse(json) as CharsExtractionResult;
+  const data = JSON.parse(await runEngine(pdfBytes, "--json")) as EngineJson;
+  return {
+    pages: data.pages.map((p) => ({
+      page: p.n,
+      text: p.text,
+      chars: [], // per-char positions are not exposed by the native CLI
+      fonts: [],
+      resolution: { unresolved: p.unresolved },
+      verdict: p.verdict,
+    })),
+    success: true,
+    total_chars: data.summary.chars,
+    total_resolved: data.summary.chars - data.summary.unresolved,
+    total_unresolved: data.summary.unresolved,
+  };
 }
 
 export async function extractText(pdfBytes: Uint8Array): Promise<string> {
-  await ensureInit();
-  const json = wasm.extract_text_from_pdf(pdfBytes);
-  const data = JSON.parse(json);
-  return data.pages.map((p: { text: string }) => p.text).join("\n\n");
+  const r = await extractChars(pdfBytes);
+  return r.pages.map((p) => p.text).join("\n\n");
 }
