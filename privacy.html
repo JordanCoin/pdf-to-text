@@ -30,12 +30,14 @@
 <a class="back" href="/pdf-to-text/">&larr; Back to PDF to Text</a>
 
 <h1>Privacy Policy</h1>
-<p class="date">Effective April 11, 2026</p>
+<p class="date">Effective October 15, 2026 (previous version: April 11, 2026)</p>
 
 <h2>The short version</h2>
 <p>
   PDF to Text runs entirely on your device. Your PDFs never leave your browser.
   We don't have a server that sees your documents, and we never will.
+  The only thing that leaves your device is a handful of anonymous counters
+  described below, and you can switch them off in the extension popup.
 </p>
 
 <h2>What we collect</h2>
@@ -51,8 +53,29 @@
   <tr><td>Extraction time</td><td>1,492 ms</td><td>Track performance</td></tr>
   <tr><td>Rescued percentage</td><td>100%</td><td>Measure quality</td></tr>
   <tr><td>Empty pages skipped</td><td>2</td><td>Detect image-only PDFs</td></tr>
-  <tr><td>Version number</td><td>0.3.0</td><td>Correlate with updates</td></tr>
+  <tr><td>Version number</td><td>0.8.0</td><td>Correlate with updates</td></tr>
 </table>
+<p>
+  When you close the viewer tab, one more record summarizes the session:
+</p>
+<table>
+  <tr><th>Data</th><th>Example</th><th>Why</th></tr>
+  <tr><td>Got value</td><td>true</td><td>Did you copy, download, or select text? Tells us whether the extension actually helped</td></tr>
+  <tr><td>Copies</td><td>2</td><td>How many copy or download actions</td></tr>
+  <tr><td>Time open</td><td>48 s</td><td>How long the viewer was open</td></tr>
+  <tr><td>Version number</td><td>0.8.0</td><td>Correlate with updates</td></tr>
+  <tr><td>Operating system</td><td>Windows</td><td>Find platform-specific problems</td></tr>
+</table>
+<p>
+  If you uninstall the extension, Chrome opens a short optional survey page.
+  Submitting it sends your chosen reason, an optional note, the extension
+  version, and your operating system. Nothing is sent if you close the page.
+</p>
+<h2>Switching it off</h2>
+<p>
+  Untick "Send anonymous usage stats" in the extension popup. The setting is
+  stored on your device and checked before every request.
+</p>
 <p>That's it. No PDF content. No URLs. No filenames. No user identity. No cookies. No device fingerprint. No IP address logging.</p>
 
 <h2>What we don't collect</h2>
@@ -68,8 +91,9 @@
 <p>
   The extension keeps a short list of your recent extractions (up to 20)
   in your browser's local storage so you can revisit them from the popup
-  menu. This data stays on your computer, is never sent anywhere, and you
-  can clear it anytime with the "Clear history" button in the popup.
+  menu, plus your usage-stats preference. This data stays on your computer,
+  is never sent anywhere, and you can clear the history anytime with the
+  "Clear history" button in the popup.
 </p>
 
 <h2>Permissions we ask for</h2>
@@ -82,8 +106,9 @@
 <h2>Third-party services</h2>
 <p>
   We do not use Google Analytics, Facebook Pixel, or any third-party
-  tracking service. The only external request is the anonymous performance
-  data described above, sent to our own server.
+  tracking service. The only external requests are the anonymous counters
+  described above, sent to our own server, which logs them and keeps no
+  database of users.
 </p>
 
 <h2>Changes to this policy</h2>
